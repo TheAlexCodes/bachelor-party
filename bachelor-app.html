@@ -302,6 +302,7 @@
                 <div class="day-header">
                     <div class="day-date">2/19 • Thursday</div>
                     <div class="day-title">Arrival Day</div>
+                    <div class="day-date" style="margin-top: 8px;" id="weather-thu">Loading weather...</div>
                 </div>
 
                 <div class="event-card">
@@ -350,6 +351,7 @@
                 <div class="day-header" style="margin-top: 30px;">
                     <div class="day-date">2/20 • Friday</div>
                     <div class="day-title">Golf & Dinner</div>
+                    <div class="day-date" style="margin-top: 8px;" id="weather-fri">Loading weather...</div>
                 </div>
 
                 <div class="event-card">
@@ -398,6 +400,7 @@
                 <div class="day-header" style="margin-top: 30px;">
                     <div class="day-date">2/21 • Saturday</div>
                     <div class="day-title">Escena Golf & BBQ</div>
+                    <div class="day-date" style="margin-top: 8px;" id="weather-sat">Loading weather...</div>
                 </div>
 
                 <div class="event-card">
@@ -451,6 +454,7 @@
                 <div class="day-header" style="margin-top: 30px;">
                     <div class="day-date">2/22 • Sunday</div>
                     <div class="day-title">Departure Day</div>
+                    <div class="day-date" style="margin-top: 8px;" id="weather-sun">Loading weather...</div>
                 </div>
 
                 <div class="event-card">
@@ -625,6 +629,66 @@
             document.getElementById('loadingSection').style.display = 'none';
             document.getElementById('errorSection').style.display = 'block';
         }
+
+        // Fetch live weather for Palm Springs
+        async function fetchWeather() {
+            try {
+                // Palm Springs coordinates
+                const lat = 33.8303;
+                const lon = -116.5453;
+                
+                // Using Open-Meteo free weather API - no API key needed
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weather_code&temperature_unit=fahrenheit&timezone=America/Los_Angeles&start_date=2026-02-19&end_date=2026-02-22`;
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.daily) {
+                    const days = data.daily;
+                    
+                    // Weather code interpretation
+                    const getWeatherEmoji = (code) => {
+                        if (code === 0) return '☀️'; // Clear
+                        if (code <= 3) return '⛅'; // Partly cloudy
+                        if (code <= 48) return '☁️'; // Cloudy/Foggy
+                        if (code <= 67) return '🌧️'; // Rain
+                        if (code <= 77) return '🌨️'; // Snow
+                        if (code <= 99) return '⛈️'; // Thunderstorm
+                        return '☀️';
+                    };
+                    
+                    // Update each day
+                    for (let i = 0; i < 4; i++) {
+                        const high = Math.round(days.temperature_2m_max[i]);
+                        const low = Math.round(days.temperature_2m_min[i]);
+                        const rainProb = days.precipitation_probability_max[i];
+                        const weatherCode = days.weather_code[i];
+                        const emoji = getWeatherEmoji(weatherCode);
+                        
+                        const rainText = rainProb > 30 ? `${rainProb}% Rain` : 'No Rain';
+                        
+                        const dayIds = ['weather-thu', 'weather-fri', 'weather-sat', 'weather-sun'];
+                        const element = document.getElementById(dayIds[i]);
+                        
+                        if (element) {
+                            element.textContent = `${emoji} ${high}°F / ${low}°F • ${rainText}`;
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching weather:', error);
+                // Fallback to generic text if weather fails
+                ['weather-thu', 'weather-fri', 'weather-sat', 'weather-sun'].forEach(id => {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        element.textContent = 'Check weather forecast';
+                    }
+                });
+            }
+        }
+
+        // Load weather when page loads
+        window.addEventListener('load', fetchWeather);
 
         // Load API on page load
         window.loadSheetsAPI = loadSheetsAPI;
